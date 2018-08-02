@@ -109,6 +109,7 @@ class Order extends DataObject
     ];
 
     private static $has_many = [
+        //'Items' => OrderItem::class,
         'Items' => OrderItem::class,
         'Modifiers' => OrderModifier::class,
         'OrderStatusLogs' => OrderStatusLog::class,
@@ -139,12 +140,12 @@ class Order extends DataObject
 
     private static $searchable_fields = [
         'Reference',
-        'Name',
+        /*'Name',*/
         'Email',
-        'Status' => [
+        /*'Status' => [
             'filter' => 'ExactMatchFilter',
             'field' => CheckboxSetField::class,
-        ],
+        ],*/
     ];
 
     private static $table_name = 'SilverShop_Order';
@@ -316,7 +317,7 @@ class Order extends DataObject
             $fields->insertAfter('Content', $payments);
             $payments->addExtraClass('order-payments');
         }
-
+//Debug::dump($this->Items()->first());die;
         return $fields;
     }
 
@@ -350,7 +351,7 @@ class Order extends DataObject
         }, ARRAY_FILTER_USE_KEY);
 
         $fields->push(
-            // TODO: Allow filtering by multiple statuses
+        // TODO: Allow filtering by multiple statuses
             DropdownField::create('Status', $this->fieldLabel('Status'))
                 ->setSource($statusOptions)
                 ->setHasEmptyDefault(true)
@@ -373,20 +374,23 @@ class Order extends DataObject
         $filters['DateTo'] = LessThanFilter::create('Placed');
 
         // filter customer need to use a bunch of different sources
-        $filters['Name'] = MultiFieldPartialMatchFilter::create(
-            'FirstName',
-            false,
-            ['SplitWords'],
-            [
-                'Surname',
-                'Member.FirstName',
-                'Member.Surname',
-                'BillingAddress.FirstName',
-                'BillingAddress.Surname',
-                'ShippingAddress.FirstName',
-                'ShippingAddress.Surname',
-            ]
-        );
+        if(isset($filters['Name'])){
+            $filters['Name'] = MultiFieldPartialMatchFilter::create(
+                'FirstName',
+                false,
+                ['SplitWords'],
+                [
+                    'Surname',
+                    'Member.FirstName',
+                    'Member.Surname',
+                    'BillingAddress.FirstName',
+                    'BillingAddress.Surname',
+                    'ShippingAddress.FirstName',
+                    'ShippingAddress.Surname',
+                ]
+            );
+        }
+
 
         $context->setFilters($filters);
 
@@ -528,14 +532,14 @@ class Order extends DataObject
 
         switch ($this->Status) {
             case 'Unpaid' :
-            return self::config()->cancel_before_payment;
+                return self::config()->cancel_before_payment;
             case 'Paid' :
-            return self::config()->cancel_before_processing;
+                return self::config()->cancel_before_processing;
             case 'Processing' :
-            return self::config()->cancel_before_sending;
+                return self::config()->cancel_before_sending;
             case 'Sent' :
             case 'Complete' :
-            return self::config()->cancel_after_sending;
+                return self::config()->cancel_after_sending;
         }
         return false;
     }
